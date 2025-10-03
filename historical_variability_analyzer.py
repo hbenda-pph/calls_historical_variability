@@ -13,7 +13,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import streamlit as st
-from typing import Tuple, Optional, Dict, List
+from typing import Tuple, Optional, Dict, List, Any
 
 
 def create_historical_variability_table(
@@ -22,7 +22,7 @@ def create_historical_variability_table(
     analysis_mode: str = "Percentages",
     company_name: str = "Company",
     company_id: int = 1
-) -> Tuple[pd.io.formats.style.Styler, pd.DataFrame]:
+) -> Tuple[Any, pd.DataFrame]:
     """
     Crea la tabla de variabilidad histórica con promedio y variabilidad por mes.
     
@@ -212,7 +212,7 @@ def create_all_companies_variability_table(
     all_companies_data: pd.DataFrame,
     grouping_method: str = "by_company",
     analysis_mode: str = "Percentages"
-) -> Tuple[pd.io.formats.style.Styler, pd.DataFrame]:
+) -> Tuple[Any, pd.DataFrame]:
     """
     Crea tabla de variabilidad histórica para todas las compañías.
     

@@ -216,14 +216,18 @@ def create_all_companies_variability_table(
     """
     Crea tabla de variabilidad histórica para todas las compañías.
     
-    Esta función está diseñada para ser adaptada en el nuevo proyecto.
-    Por ahora retorna un placeholder que debe ser implementado según
-    los requerimientos específicos del nuevo proyecto.
+    Estructura de la tabla:
+    - Filas: Compañías (una por fila)
+    - Columnas: Average Mix + columnas alternadas (Valor del mes + Variabilidad del mes)
     
     Parámetros:
     -----------
     all_companies_data : pd.DataFrame
-        DataFrame con datos de todas las compañías
+        DataFrame con datos de todas las compañías. Debe tener columnas:
+        - 'company_name': Nombre de la compañía
+        - 'company_id': ID de la compañía
+        - 'monthly_calls': Array con números absolutos de llamadas (12 elementos)
+        - 'calls_percentages': Array con porcentajes de llamadas (12 elementos)
     grouping_method : str
         Método de agrupación: "by_company", "by_region", "by_industry", "total"
     analysis_mode : str
@@ -233,21 +237,121 @@ def create_all_companies_variability_table(
     --------
     Tuple[pd.io.formats.style.Styler, pd.DataFrame]
         Tupla con (tabla con estilos, DataFrame sin estilos)
-        
-    Nota:
-    -----
-    Esta función debe ser implementada en el nuevo proyecto según
-    la estructura específica de datos y requerimientos.
     """
     
-    # Placeholder - debe ser implementado en el nuevo proyecto
-    placeholder_data = {
-        'Metric': ['Average Mix', 'Monthly Values', 'Variability'],
-        'Note': ['To be implemented', 'in new project', 'with all companies data']
-    }
+    # Validar que tenemos datos
+    if all_companies_data.empty:
+        # Crear DataFrame vacío con estructura correcta
+        empty_df = pd.DataFrame(columns=['Company', 'Average Mix'])
+        return empty_df.style, empty_df
     
-    df = pd.DataFrame(placeholder_data)
-    styled_df = df.style.apply(lambda x: ['background-color: #fff2cc' for _ in x], axis=1)
+    # Preparar datos para la tabla
+    table_data = []
+    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    
+    # Crear columnas de la tabla
+    columns = ['Company', 'Average Mix']
+    for month in months:
+        columns.extend([f'{month}', f'{month}_var'])
+    
+    # Procesar cada compañía
+    for _, company_row in all_companies_data.iterrows():
+        company_name = company_row.get('company_name', 'Unknown Company')
+        company_id = company_row.get('company_id', 0)
+        
+        # Obtener datos mensuales
+        monthly_calls = company_row.get('monthly_calls', np.zeros(12))
+        calls_percentages = company_row.get('calls_percentages', np.zeros(12))
+        
+        # Convertir a arrays numpy si no lo son
+        if not isinstance(monthly_calls, np.ndarray):
+            monthly_calls = np.array(monthly_calls)
+        if not isinstance(calls_percentages, np.ndarray):
+            calls_percentages = np.array(calls_percentages)
+        
+        # Calcular promedio histórico
+        if analysis_mode == "Percentages":
+            average_mix = round(np.mean(calls_percentages), 2)
+            monthly_values = calls_percentages
+            avg_unit = "%"
+            var_unit = "pp"
+        else:
+            average_mix = round(np.mean(monthly_calls), 2)
+            monthly_values = monthly_calls
+            avg_unit = "calls"
+            var_unit = "calls"
+        
+        # Calcular variabilidad
+        variability = [round(monthly_values[i] - average_mix, 2) for i in range(12)]
+        
+        # Crear fila para esta compañía
+        row_data = [company_name]
+        
+        # Average Mix
+        if analysis_mode == "Percentages":
+            row_data.append(f"{average_mix:.2f}%")
+        else:
+            row_data.append(f"{average_mix:,.2f}")
+        
+        # Valores mensuales y variabilidad alternados
+        for i, month in enumerate(months):
+            # Valor del mes
+            if analysis_mode == "Percentages":
+                row_data.append(f"{monthly_values[i]:.2f}%")
+            else:
+                row_data.append(f"{monthly_values[i]:,.0f}")
+            
+            # Variabilidad del mes
+            if variability[i] >= 0:
+                if analysis_mode == "Percentages":
+                    row_data.append(f"+{variability[i]:.2f}")
+                else:
+                    row_data.append(f"+{variability[i]:,.2f}")
+            else:
+                if analysis_mode == "Percentages":
+                    row_data.append(f"{variability[i]:.2f}")
+                else:
+                    row_data.append(f"{variability[i]:,.2f}")
+        
+        table_data.append(row_data)
+    
+    # Crear DataFrame
+    df = pd.DataFrame(table_data, columns=columns)
+    
+    # Aplicar estilos
+    def highlight_variability_table(row):
+        styles = []
+        
+        # Primera columna (Company) - negrita
+        styles.append('font-weight: bold; background-color: #f8f9fa')
+        
+        # Segunda columna (Average Mix) - amarillo
+        styles.append('background-color: #fff2cc; font-weight: bold')
+        
+        # Columnas alternadas (Valor del mes + Variabilidad)
+        for i in range(2, len(row)):
+            col_name = row.index[i]
+            
+            if col_name.endswith('_var'):
+                # Columna de variabilidad
+                var_value = row.iloc[i]
+                if isinstance(var_value, str):
+                    if var_value.startswith('+'):
+                        styles.append('background-color: #d4edda; color: #155724')  # Verde para positivo
+                    elif var_value.startswith('-'):
+                        styles.append('background-color: #f8d7da; color: #721c24')  # Rojo para negativo
+                    else:
+                        styles.append('background-color: #f8f9fa')  # Gris para cero
+                else:
+                    styles.append('background-color: #f8f9fa')
+            else:
+                # Columna de valor mensual
+                styles.append('background-color: #e8f4f8')  # Azul claro
+        
+        return styles
+    
+    styled_df = df.style.apply(highlight_variability_table, axis=1)
     
     return styled_df, df
 
@@ -302,6 +406,53 @@ def example_multiple_companies():
     return stats
 
 
+def example_all_companies_table():
+    """Ejemplo de uso para la tabla de todas las compañías."""
+    
+    # Crear DataFrame de ejemplo con datos de múltiples compañías
+    companies_data = []
+    
+    # Datos de ejemplo para cada compañía
+    companies_info = [
+        {
+            'company_name': 'Monarch HVAC',
+            'company_id': 1,
+            'monthly_calls': np.array([1200, 1100, 1300, 1400, 1500, 1600, 1700, 1600, 1500, 1400, 1300, 1200]),
+            'calls_percentages': np.array([8.33, 7.64, 9.03, 9.72, 10.42, 11.11, 11.81, 11.11, 10.42, 9.72, 9.03, 8.33])
+        },
+        {
+            'company_name': 'Elite Plumbing',
+            'company_id': 2,
+            'monthly_calls': np.array([1000, 900, 1100, 1200, 1300, 1400, 1500, 1400, 1300, 1200, 1100, 1000]),
+            'calls_percentages': np.array([7.89, 7.12, 8.45, 9.18, 9.91, 10.64, 11.37, 10.64, 9.91, 9.18, 8.45, 7.89])
+        },
+        {
+            'company_name': 'Premium Electric',
+            'company_id': 3,
+            'monthly_calls': np.array([1100, 1000, 1200, 1300, 1400, 1500, 1600, 1500, 1400, 1300, 1200, 1100]),
+            'calls_percentages': np.array([8.76, 8.12, 9.38, 10.04, 10.70, 11.36, 12.02, 11.36, 10.70, 10.04, 9.38, 8.76])
+        }
+    ]
+    
+    # Crear DataFrame
+    df_companies = pd.DataFrame(companies_info)
+    
+    # Crear tabla de variabilidad para todas las compañías
+    styled_table, df_table = create_all_companies_variability_table(
+        df_companies,
+        grouping_method="by_company",
+        analysis_mode="Percentages"
+    )
+    
+    print("Tabla de Variabilidad Histórica - Todas las Compañías")
+    print("=" * 60)
+    print("Estructura: Filas = Compañías, Columnas = Average Mix + Valores/Variabilidad alternados")
+    print("\nDataFrame (sin estilos):")
+    print(df_table.to_string(index=False))
+    
+    return styled_table, df_table
+
+
 if __name__ == "__main__":
     print("Historical Variability Analyzer")
     print("=" * 40)
@@ -310,7 +461,10 @@ if __name__ == "__main__":
     print("\n1. Ejemplo - Una Compañía:")
     example_single_company()
     
-    print("\n2. Ejemplo - Múltiples Compañías:")
+    print("\n2. Ejemplo - Múltiples Compañías (Estadísticas):")
     example_multiple_companies()
+    
+    print("\n3. Ejemplo - Tabla Multi-Compañía:")
+    example_all_companies_table()
     
     print("\n✅ Script ejecutado exitosamente")

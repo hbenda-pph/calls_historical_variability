@@ -214,6 +214,16 @@ docker build -t historical-variability-dashboard .
 docker run -p 8501:8501 historical-variability-dashboard
 ```
 
+#### **Deploy a Google Cloud Run**
+```bash
+# Ejecutar script de build & deploy
+./build_deploy.sh
+
+# O manualmente:
+gcloud builds submit --tag gcr.io/platform-partners-qua/historical-variability-analyzer
+gcloud run deploy historical-variability-analyzer --image gcr.io/platform-partners-qua/historical-variability-analyzer --platform managed --region us-east1 --allow-unauthenticated --port 8501
+```
+
 #### **Configuración de Google Sheets (Opcional)**
 Para habilitar la exportación a Google Sheets:
 1. Crear proyecto en Google Cloud Console

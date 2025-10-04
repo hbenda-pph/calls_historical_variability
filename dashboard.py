@@ -173,35 +173,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-def create_multi_level_header():
-    """Crea el encabezado con doble fila para la tabla."""
-    
-    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    
-    # Crear DataFrame para el encabezado
-    header_data = []
-    
-    # Primera fila: Meses agrupados
-    first_row = ['Company', 'Average Mix']
-    for month in months:
-        first_row.extend([month, ''])  # Mes y espacio para variabilidad
-    
-    # Segunda fila: Valores y Variabilidad
-    second_row = ['', '']
-    for month in months:
-        second_row.extend(['Value', 'Variability'])
-    
-    header_data = [first_row, second_row]
-    
-    # Crear columnas
-    columns = ['Company', 'Average Mix']
-    for month in months:
-        columns.extend([f'{month}', f'{month}_var'])
-    
-    header_df = pd.DataFrame(header_data, columns=columns)
-    
-    return header_df
 
 def export_to_google_sheets(df, sheet_name="Historical_Variability"):
     """Exporta el DataFrame a Google Sheets usando la cuenta de servicio del deploy."""
@@ -313,15 +284,7 @@ def main():
         analysis_mode=analysis_mode
     )
     
-    # Mostrar encabezado con doble fila
-    header_df = create_multi_level_header()
-    st.dataframe(
-        header_df,
-        use_container_width=True,
-        hide_index=True
-    )
-    
-    # Mostrar la tabla
+    # Mostrar la tabla con encabezado integrado
     st.dataframe(
         styled_table,
         use_container_width=True,

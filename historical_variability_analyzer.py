@@ -316,38 +316,71 @@ def create_all_companies_variability_table(
         
         table_data.append(row_data)
     
-    # Crear DataFrame
-    df = pd.DataFrame(table_data, columns=columns)
+    # Crear encabezado con doble fila
+    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    
+    # Primera fila del encabezado: Meses agrupados
+    header_row1 = ['Company', 'Average Mix']
+    for month in months:
+        header_row1.extend([month, ''])  # Mes y espacio para variabilidad
+    
+    # Segunda fila del encabezado: Valores y Variabilidad
+    header_row2 = ['', '']
+    for month in months:
+        header_row2.extend(['Value', 'Variability'])
+    
+    # Combinar encabezado con datos
+    all_data = [header_row1, header_row2] + table_data
+    
+    # Crear DataFrame con encabezado integrado
+    df = pd.DataFrame(all_data, columns=columns)
     
     # Aplicar estilos
     def highlight_variability_table(row):
         styles = []
         
-        # Primera columna (Company) - negrita
-        styles.append('font-weight: bold; background-color: #f8f9fa')
-        
-        # Segunda columna (Average Mix) - amarillo
-        styles.append('background-color: #fff2cc; font-weight: bold')
-        
-        # Columnas alternadas (Valor del mes + Variabilidad)
-        for i in range(2, len(row)):
-            col_name = row.index[i]
-            
-            if col_name.endswith('_var'):
-                # Columna de variabilidad
-                var_value = row.iloc[i]
-                if isinstance(var_value, str):
-                    if var_value.startswith('+'):
-                        styles.append('background-color: #d4edda; color: #155724')  # Verde para positivo
-                    elif var_value.startswith('-'):
-                        styles.append('background-color: #f8d7da; color: #721c24')  # Rojo para negativo
-                    else:
-                        styles.append('background-color: #f8f9fa')  # Gris para cero
+        # Verificar si es fila de encabezado
+        if row.name < 2:  # Primeras dos filas son encabezado
+            for i in range(len(row)):
+                if i == 0:  # Primera columna
+                    styles.append('font-weight: bold; background-color: #f0f2f6')
+                elif i == 1:  # Segunda columna (Average Mix)
+                    styles.append('font-weight: bold; background-color: #f0f2f6')
                 else:
-                    styles.append('background-color: #f8f9fa')
-            else:
-                # Columna de valor mensual
-                styles.append('background-color: #e8f4f8')  # Azul claro
+                    # Columnas de meses
+                    col_name = row.index[i]
+                    if col_name.endswith('_var'):
+                        styles.append('font-weight: bold; background-color: #f8f9fa; font-size: 10px')
+                    else:
+                        styles.append('font-weight: bold; background-color: #e8f4f8; font-size: 10px')
+        else:
+            # Filas de datos
+            # Primera columna (Company) - negrita
+            styles.append('font-weight: bold; background-color: #f8f9fa')
+            
+            # Segunda columna (Average Mix) - amarillo
+            styles.append('background-color: #fff2cc; font-weight: bold')
+            
+            # Columnas alternadas (Valor del mes + Variabilidad)
+            for i in range(2, len(row)):
+                col_name = row.index[i]
+                
+                if col_name.endswith('_var'):
+                    # Columna de variabilidad
+                    var_value = row.iloc[i]
+                    if isinstance(var_value, str):
+                        if var_value.startswith('+'):
+                            styles.append('background-color: #d4edda; color: #155724')  # Verde para positivo
+                        elif var_value.startswith('-'):
+                            styles.append('background-color: #f8d7da; color: #721c24')  # Rojo para negativo
+                        else:
+                            styles.append('background-color: #f8f9fa')  # Gris para cero
+                    else:
+                        styles.append('background-color: #f8f9fa')
+                else:
+                    # Columna de valor mensual
+                    styles.append('background-color: #e8f4f8')  # Azul claro
         
         return styles
     

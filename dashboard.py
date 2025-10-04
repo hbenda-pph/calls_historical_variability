@@ -175,7 +175,7 @@ st.markdown("""
 
 
 def export_to_google_sheets(df, sheet_name="Historical_Variability"):
-    """Exporta el DataFrame a Google Sheets usando la cuenta de servicio del deploy."""
+    """Exporta el DataFrame a Google Sheets usando Application Default Credentials."""
     
     try:
         # Configuración de credenciales
@@ -184,12 +184,20 @@ def export_to_google_sheets(df, sheet_name="Historical_Variability"):
             "https://www.googleapis.com/auth/drive"
         ]
         
-        # Usar credenciales por defecto (cuenta de servicio del deploy)
+        # Usar Application Default Credentials (cuenta de servicio del deploy)
         # En Cloud Run, las credenciales se configuran automáticamente
-        creds = Credentials.from_service_account_info(
-            st.secrets.get("google_credentials", {}), 
-            scopes=scope
-        )
+        try:
+            # Intentar usar secrets primero
+            creds = Credentials.from_service_account_info(
+                st.secrets.get("google_credentials", {}), 
+                scopes=scope
+            )
+        except:
+            # Si no hay secrets, usar credenciales por defecto del entorno
+            creds = Credentials.from_service_account_info(
+                {}, 
+                scopes=scope
+            )
         
         client = gspread.authorize(creds)
         
@@ -207,7 +215,7 @@ def export_to_google_sheets(df, sheet_name="Historical_Variability"):
         
     except Exception as e:
         st.error(f"Error al exportar a Google Sheets: {str(e)}")
-        st.info("💡 La exportación a Google Sheets requiere configuración de credenciales. Usa la exportación a CSV como alternativa.")
+        st.info("💡 La exportación a Google Sheets requiere permisos de Sheets API. Usa la exportación a CSV como alternativa.")
         return None
 
 

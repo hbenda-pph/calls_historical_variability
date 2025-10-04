@@ -15,8 +15,14 @@ import numpy as np
 from historical_variability_analyzer import create_all_companies_variability_table
 import gspread
 from google.oauth2.service_account import Credentials
+from google.cloud import bigquery
+import gettext
+import locale
 import io
 import base64
+import os
+import warnings
+warnings.filterwarnings('ignore')
 
 # Configuración de la página
 st.set_page_config(
@@ -25,6 +31,109 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# =============================================================================
+# CONFIGURACIÓN DE GETTEXT
+# =============================================================================
+
+def get_translation_function():
+    """Obtener función de traducción según idioma"""
+    
+    # Detectar idioma del navegador o parámetro URL
+    lang = st.query_params.get("lang", None)
+    
+    # Si no hay parámetro URL, detectar idioma del sistema
+    if lang is None:
+        try:
+            system_lang = locale.getdefaultlocale()[0][:2]
+            if system_lang in ["es", "en"]:
+                lang = system_lang
+            else:
+                lang = "en"  # Fallback a inglés
+        except:
+            lang = "en"  # Fallback a inglés
+    
+    # Configurar GETTEXT
+    try:
+        translation = gettext.translation(
+            'messages', 
+            'locales', 
+            languages=[lang],
+            fallback=True
+        )
+        return translation.gettext
+    except Exception as e:
+        st.warning(f"Translation error: {e}. Using English.")
+        return lambda x: x
+
+# Función de traducción (se llama en cada uso)
+def _(text):
+    return get_translation_function()(text)
+
+# =============================================================================
+# FUNCIONES DE DATOS REALES
+# =============================================================================
+
+@st.cache_data
+def get_companies_variability_data():
+    """
+    Extrae datos de variabilidad histórica de todas las compañías desde BigQuery.
+    """
+    try:
+        client = bigquery.Client()
+        
+        query = f"""
+        SELECT c.company_id AS `company_id`
+            , c.company_name AS `company_name`
+            , EXTRACT(YEAR FROM DATE(cl.lead_call_created_on)) AS `year`
+            , EXTRACT(MONTH FROM DATE(cl.lead_call_created_on)) AS `month`
+            , COUNT(cl.lead_call_id) AS `calls`
+        FROM `pph-central.silver.vw_consolidated_call_inbound_location` cl
+        JOIN `pph-central.settings.companies` c ON cl.company_id = c.company_id
+        WHERE DATE(cl.lead_call_created_on) < DATE("2025-10-01")
+          AND EXTRACT(YEAR FROM DATE(cl.lead_call_created_on)) >= 2015
+        GROUP BY c.company_id, c.company_name, EXTRACT(YEAR FROM DATE(cl.lead_call_created_on)), EXTRACT(MONTH FROM DATE(cl.lead_call_created_on))
+        ORDER BY c.company_id, EXTRACT(YEAR FROM DATE(cl.lead_call_created_on)), EXTRACT(MONTH FROM DATE(cl.lead_call_created_on))
+        """
+        
+        df = client.query(query).to_dataframe()
+        
+        if df.empty:
+            return pd.DataFrame()
+        
+        # Procesar datos por compañía
+        companies_data = []
+        for company_id in df['company_id'].unique():
+            company_df = df[df['company_id'] == company_id]
+            company_name = company_df['company_name'].iloc[0]
+            
+            # Crear arrays de 12 meses (Jan-Dec)
+            monthly_calls = np.zeros(12)
+            calls_percentages = np.zeros(12)
+            
+            # Llenar datos por mes
+            for _, row in company_df.iterrows():
+                month_idx = int(row['month']) - 1  # Convertir a índice 0-11
+                if 0 <= month_idx < 12:
+                    monthly_calls[month_idx] = row['calls']
+            
+            # Calcular porcentajes
+            total_calls = np.sum(monthly_calls)
+            if total_calls > 0:
+                calls_percentages = (monthly_calls / total_calls) * 100
+            
+            companies_data.append({
+                'company_name': company_name,
+                'company_id': company_id,
+                'monthly_calls': monthly_calls,
+                'calls_percentages': calls_percentages
+            })
+        
+        return pd.DataFrame(companies_data)
+        
+    except Exception as e:
+        st.error(f"Error al obtener datos de BigQuery: {str(e)}")
+        return pd.DataFrame()
 
 # CSS personalizado para el encabezado con doble fila
 st.markdown("""
@@ -67,42 +176,35 @@ st.markdown("""
 def create_multi_level_header():
     """Crea el encabezado con doble fila para la tabla."""
     
-    # Primera fila: Meses agrupados
     months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     
-    header_html = """
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
-        <tr>
-            <td class="multi-level-header" style="width: 15%;">Company</td>
-            <td class="multi-level-header" style="width: 10%;">Average Mix</td>
-    """
+    # Crear DataFrame para el encabezado
+    header_data = []
     
-    # Crear celdas agrupadas para cada mes (2 columnas por mes)
+    # Primera fila: Meses agrupados
+    first_row = ['Company', 'Average Mix']
     for month in months:
-        header_html += f'<td class="month-header" colspan="2" style="width: 6.25%;">{month}</td>'
-    
-    header_html += """
-        </tr>
-        <tr>
-            <td class="value-header"></td>
-            <td class="value-header"></td>
-    """
+        first_row.extend([month, ''])  # Mes y espacio para variabilidad
     
     # Segunda fila: Valores y Variabilidad
+    second_row = ['', '']
     for month in months:
-        header_html += f'<td class="value-header">{month}</td>'
-        header_html += f'<td class="variability-header">{month}_var</td>'
+        second_row.extend(['Value', 'Variability'])
     
-    header_html += """
-        </tr>
-    </table>
-    """
+    header_data = [first_row, second_row]
     
-    return header_html
+    # Crear columnas
+    columns = ['Company', 'Average Mix']
+    for month in months:
+        columns.extend([f'{month}', f'{month}_var'])
+    
+    header_df = pd.DataFrame(header_data, columns=columns)
+    
+    return header_df
 
 def export_to_google_sheets(df, sheet_name="Historical_Variability"):
-    """Exporta el DataFrame a Google Sheets."""
+    """Exporta el DataFrame a Google Sheets usando la cuenta de servicio del deploy."""
     
     try:
         # Configuración de credenciales
@@ -111,17 +213,24 @@ def export_to_google_sheets(df, sheet_name="Historical_Variability"):
             "https://www.googleapis.com/auth/drive"
         ]
         
-        # Intentar obtener credenciales del entorno o usar credenciales por defecto
+        # Usar credenciales por defecto (cuenta de servicio del deploy)
         try:
-            # Para Streamlit Cloud o entorno con secrets configurado
+            creds = Credentials.from_service_account_file(
+                '/app/credentials.json', 
+                scopes=scope
+            )
+        except FileNotFoundError:
+            # Si no hay archivo de credenciales, usar credenciales por defecto
+            creds = Credentials.from_service_account_info(
+                st.secrets.get("google_credentials", {}), 
+                scopes=scope
+            )
+        except Exception:
+            # Usar credenciales por defecto del entorno
             creds = Credentials.from_service_account_info(
                 st.secrets["google_credentials"], 
                 scopes=scope
             )
-        except:
-            # Para desarrollo local o sin configuración de secrets
-            st.warning("⚠️ Credenciales de Google Sheets no configuradas. Configura las credenciales para habilitar la exportación.")
-            return None
         
         client = gspread.authorize(creds)
         
@@ -139,94 +248,63 @@ def export_to_google_sheets(df, sheet_name="Historical_Variability"):
         
     except Exception as e:
         st.error(f"Error al exportar a Google Sheets: {str(e)}")
+        st.info("💡 Para habilitar la exportación, configura las credenciales de Google Sheets en el servicio de cuenta.")
         return None
 
-def create_sample_data():
-    """Crea datos de ejemplo para demostración."""
-    
-    companies_info = [
-        {
-            'company_name': 'Monarch HVAC',
-            'company_id': 1,
-            'monthly_calls': np.array([1200, 1100, 1300, 1400, 1500, 1600, 1700, 1600, 1500, 1400, 1300, 1200]),
-            'calls_percentages': np.array([8.33, 7.64, 9.03, 9.72, 10.42, 11.11, 11.81, 11.11, 10.42, 9.72, 9.03, 8.33])
-        },
-        {
-            'company_name': 'Elite Plumbing',
-            'company_id': 2,
-            'monthly_calls': np.array([1000, 900, 1100, 1200, 1300, 1400, 1500, 1400, 1300, 1200, 1100, 1000]),
-            'calls_percentages': np.array([7.89, 7.12, 8.45, 9.18, 9.91, 10.64, 11.37, 10.64, 9.91, 9.18, 8.45, 7.89])
-        },
-        {
-            'company_name': 'Premium Electric',
-            'company_id': 3,
-            'monthly_calls': np.array([1100, 1000, 1200, 1300, 1400, 1500, 1600, 1500, 1400, 1300, 1200, 1100]),
-            'calls_percentages': np.array([8.76, 8.12, 9.38, 10.04, 10.70, 11.36, 12.02, 11.36, 10.70, 10.04, 9.38, 8.76])
-        },
-        {
-            'company_name': 'Advanced HVAC',
-            'company_id': 4,
-            'monthly_calls': np.array([1300, 1200, 1400, 1500, 1600, 1700, 1800, 1700, 1600, 1500, 1400, 1300]),
-            'calls_percentages': np.array([8.67, 8.00, 9.33, 10.00, 10.67, 11.33, 12.00, 11.33, 10.67, 10.00, 9.33, 8.67])
-        },
-        {
-            'company_name': 'Pro Plumbing',
-            'company_id': 5,
-            'monthly_calls': np.array([900, 800, 1000, 1100, 1200, 1300, 1400, 1300, 1200, 1100, 1000, 900]),
-            'calls_percentages': np.array([7.50, 6.67, 8.33, 9.17, 10.00, 10.83, 11.67, 10.83, 10.00, 9.17, 8.33, 7.50])
-        }
-    ]
-    
-    return pd.DataFrame(companies_info)
 
 def main():
     """Función principal del dashboard."""
     
     # Título principal
-    st.title("📊 Historical Variability Analyzer")
+    st.title(f"📊 {_('Historical Variability Analyzer')}")
     st.markdown("---")
     
     # Panel de control izquierdo
     with st.sidebar:
-        st.header("🎛️ Panel de Control")
+        st.header(f"🎛️ {_('Control Panel')}")
         
         # Selector de modo de análisis
         analysis_mode = st.selectbox(
-            "Modo de Análisis",
+            _("Analysis Mode"),
             options=["Percentages", "Absolute"],
             index=0,
-            help="Selecciona si deseas ver porcentajes o cantidades absolutas de llamadas"
+            help=_("Select whether to view percentages or absolute call quantities")
         )
         
         st.markdown("---")
         
         # Información del análisis
-        st.subheader("ℹ️ Información")
+        st.subheader(f"ℹ️ {_('Analysis Information')}")
         st.info(f"""
-        **Modo actual**: {analysis_mode}
+        **{_('Current Mode')}**: {analysis_mode}
         
-        **Estructura de la tabla**:
-        - Filas: Compañías
-        - Columnas: Average Mix + Valores/Variabilidad alternados
+        **{_('Table Structure')}**:
+        - {_('Rows')}: {_('Companies')}
+        - {_('Columns')}: {_('Average Mix')} + {_('Monthly Values')}/{_('Variability')} alternated
         
-        **Colores**:
-        - 🟡 Amarillo: Average Mix
-        - 🔵 Azul: Valores mensuales
-        - 🟢 Verde: Variabilidad positiva
-        - 🔴 Rojo: Variabilidad negativa
+        **{_('Colors')}**:
+        - 🟡 {_('Yellow')}: {_('Average Mix')}
+        - 🔵 {_('Blue')}: {_('Monthly Values')}
+        - 🟢 {_('Green')}: {_('Positive Variability')}
+        - 🔴 {_('Red')}: {_('Negative Variability')}
         """)
         
         st.markdown("---")
         
         # Botón de exportación
-        st.subheader("📤 Exportación")
-        export_button = st.button("📊 Exportar a Google Sheets", type="primary")
+        st.subheader(f"📤 {_('Export')}")
+        export_button = st.button(f"📊 {_('Export to Google Sheets')}", type="primary")
     
     # Contenido principal
-    st.subheader("📈 Tabla de Variabilidad Histórica - Todas las Compañías")
+    st.subheader(f"📈 {_('Historical Variability Table - All Companies')}")
     
-    # Crear datos de ejemplo
-    companies_data = create_sample_data()
+    # Obtener datos reales de BigQuery
+    with st.spinner(_("Loading data from BigQuery...")):
+        companies_data = get_companies_variability_data()
+    
+    if companies_data.empty:
+        st.error(_("No data available. Please check your BigQuery connection."))
+        return
     
     # Crear tabla de variabilidad
     styled_table, df_table = create_all_companies_variability_table(
@@ -236,7 +314,12 @@ def main():
     )
     
     # Mostrar encabezado con doble fila
-    st.markdown(create_multi_level_header(), unsafe_allow_html=True)
+    header_df = create_multi_level_header()
+    st.dataframe(
+        header_df,
+        use_container_width=True,
+        hide_index=True
+    )
     
     # Mostrar la tabla
     st.dataframe(
@@ -249,33 +332,33 @@ def main():
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.metric("Total Compañías", len(companies_data))
+        st.metric(_("Total Companies"), len(companies_data))
     
     with col2:
         if analysis_mode == "Percentages":
             avg_overall = np.mean([np.mean(row['calls_percentages']) for _, row in companies_data.iterrows()])
-            st.metric("Promedio General", f"{avg_overall:.2f}%")
+            st.metric(_("Overall Average"), f"{avg_overall:.2f}%")
         else:
             avg_overall = np.mean([np.mean(row['monthly_calls']) for _, row in companies_data.iterrows()])
-            st.metric("Promedio General", f"{avg_overall:,.0f}")
+            st.metric(_("Overall Average"), f"{avg_overall:,.0f}")
     
     with col3:
-        st.metric("Período", "12 meses")
+        st.metric(_("Period"), f"12 {_('months')}")
     
     # Exportación a Google Sheets
     if export_button:
-        with st.spinner("Exportando a Google Sheets..."):
+        with st.spinner(_("Exporting to Google Sheets...")):
             sheet_url = export_to_google_sheets(df_table, f"Historical_Variability_{analysis_mode}")
             
             if sheet_url:
-                st.success("✅ Exportación exitosa!")
-                st.markdown(f"**Enlace a Google Sheets**: [Abrir hoja]({sheet_url})")
+                st.success(f"✅ {_('Export successful!')}")
+                st.markdown(f"**{_('Open sheet')}**: [Abrir hoja]({sheet_url})")
             else:
-                st.error("❌ Error en la exportación. Verifica la configuración de credenciales.")
+                st.error(f"❌ {_('Export error. Check credentials configuration.')}")
     
     # Footer
     st.markdown("---")
-    st.markdown("**Desarrollado por**: Platform Partners Team | **Versión**: 1.0")
+    st.markdown(f"**{_('Developed by')}**: Platform Partners Team | **{_('Version')}**: 1.0")
 
 if __name__ == "__main__":
     main()

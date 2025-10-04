@@ -16,6 +16,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiar código fuente
 COPY . .
 
+# Crear directorio de traducciones si no existe
+RUN mkdir -p locales
+
 # Exponer puerto
 EXPOSE 8501
 

@@ -10,7 +10,7 @@ set -e  # Salir si hay algún error
 PROJECT_ID="platform-partners-qua"
 SERVICE_NAME="historical-variability-analyzer"
 REGION="us-east1"
-SERVICE_ACCOUNT="data-analytics@platform-partners-des.iam.gserviceaccount.com"
+SERVICE_ACCOUNT="streamlit-bigquery-sa@platform-partners-qua.iam.gserviceaccount.com"
 IMAGE_TAG="gcr.io/${PROJECT_ID}/${SERVICE_NAME}"
 
 echo "🚀 Iniciando Build & Deploy para Historical Variability Analyzer"

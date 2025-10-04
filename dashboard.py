@@ -207,7 +207,7 @@ def export_to_google_sheets(df, sheet_name="Historical_Variability"):
         
     except Exception as e:
         st.error(f"Error al exportar a Google Sheets: {str(e)}")
-        st.info("💡 La cuenta de servicio necesita permisos de Google Sheets API. Contacta al administrador para configurar los permisos.")
+        st.info("💡 La exportación a Google Sheets requiere configuración de credenciales. Usa la exportación a CSV como alternativa.")
         return None
 
 

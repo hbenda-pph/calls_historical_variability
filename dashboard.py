@@ -78,6 +78,7 @@ def _(text):
 def get_companies_variability_data():
     """
     Extrae datos de variabilidad histórica de todas las compañías desde BigQuery.
+    Suma todas las llamadas por mes de todos los años para cada compañía.
     """
     try:
         client = bigquery.Client()
@@ -85,15 +86,14 @@ def get_companies_variability_data():
         query = f"""
         SELECT c.company_id AS `company_id`
             , c.company_name AS `company_name`
-            , EXTRACT(YEAR FROM DATE(cl.lead_call_created_on)) AS `year`
             , EXTRACT(MONTH FROM DATE(cl.lead_call_created_on)) AS `month`
             , COUNT(cl.lead_call_id) AS `calls`
         FROM `pph-central.silver.vw_consolidated_call_inbound_location` cl
         JOIN `pph-central.settings.companies` c ON cl.company_id = c.company_id
         WHERE DATE(cl.lead_call_created_on) < DATE("2025-10-01")
           AND EXTRACT(YEAR FROM DATE(cl.lead_call_created_on)) >= 2015
-        GROUP BY c.company_id, c.company_name, EXTRACT(YEAR FROM DATE(cl.lead_call_created_on)), EXTRACT(MONTH FROM DATE(cl.lead_call_created_on))
-        ORDER BY c.company_id, EXTRACT(YEAR FROM DATE(cl.lead_call_created_on)), EXTRACT(MONTH FROM DATE(cl.lead_call_created_on))
+        GROUP BY c.company_id, c.company_name, EXTRACT(MONTH FROM DATE(cl.lead_call_created_on))
+        ORDER BY c.company_id, EXTRACT(MONTH FROM DATE(cl.lead_call_created_on))
         """
         
         df = client.query(query).to_dataframe()
@@ -111,7 +111,7 @@ def get_companies_variability_data():
             monthly_calls = np.zeros(12)
             calls_percentages = np.zeros(12)
             
-            # Llenar datos por mes
+            # Llenar datos por mes (sumando todos los años)
             for _, row in company_df.iterrows():
                 month_idx = int(row['month']) - 1  # Convertir a índice 0-11
                 if 0 <= month_idx < 12:

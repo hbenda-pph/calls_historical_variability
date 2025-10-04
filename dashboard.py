@@ -185,23 +185,11 @@ def export_to_google_sheets(df, sheet_name="Historical_Variability"):
         ]
         
         # Usar credenciales por defecto (cuenta de servicio del deploy)
-        try:
-            creds = Credentials.from_service_account_file(
-                '/app/credentials.json', 
-                scopes=scope
-            )
-        except FileNotFoundError:
-            # Si no hay archivo de credenciales, usar credenciales por defecto
-            creds = Credentials.from_service_account_info(
-                st.secrets.get("google_credentials", {}), 
-                scopes=scope
-            )
-        except Exception:
-            # Usar credenciales por defecto del entorno
-            creds = Credentials.from_service_account_info(
-                st.secrets["google_credentials"], 
-                scopes=scope
-            )
+        # En Cloud Run, las credenciales se configuran automáticamente
+        creds = Credentials.from_service_account_info(
+            st.secrets.get("google_credentials", {}), 
+            scopes=scope
+        )
         
         client = gspread.authorize(creds)
         
@@ -219,7 +207,7 @@ def export_to_google_sheets(df, sheet_name="Historical_Variability"):
         
     except Exception as e:
         st.error(f"Error al exportar a Google Sheets: {str(e)}")
-        st.info("💡 Para habilitar la exportación, configura las credenciales de Google Sheets en el servicio de cuenta.")
+        st.info("💡 La cuenta de servicio necesita permisos de Google Sheets API. Contacta al administrador para configurar los permisos.")
         return None
 
 
@@ -264,7 +252,13 @@ def main():
         
         # Botón de exportación
         st.subheader(f"📤 {_('Export')}")
-        export_button = st.button(f"📊 {_('Export to Google Sheets')}", type="primary")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            export_sheets_button = st.button(f"📊 {_('Export to Google Sheets')}", type="primary")
+        
+        with col2:
+            export_csv_button = st.button(f"📄 {_('Export to CSV')}", type="secondary")
     
     # Contenido principal
     st.subheader(f"📈 {_('Historical Variability Table - All Companies')}")
@@ -309,7 +303,7 @@ def main():
         st.metric(_("Period"), f"12 {_('months')}")
     
     # Exportación a Google Sheets
-    if export_button:
+    if export_sheets_button:
         with st.spinner(_("Exporting to Google Sheets...")):
             sheet_url = export_to_google_sheets(df_table, f"Historical_Variability_{analysis_mode}")
             
@@ -318,6 +312,16 @@ def main():
                 st.markdown(f"**{_('Open sheet')}**: [Abrir hoja]({sheet_url})")
             else:
                 st.error(f"❌ {_('Export error. Check credentials configuration.')}")
+    
+    # Exportación a CSV
+    if export_csv_button:
+        csv = df_table.to_csv(index=False)
+        st.download_button(
+            label=f"📄 {_('Download CSV')}",
+            data=csv,
+            file_name=f"historical_variability_{analysis_mode.lower()}.csv",
+            mime="text/csv",
+        )
     
     # Footer
     st.markdown("---")

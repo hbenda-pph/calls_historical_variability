@@ -284,7 +284,42 @@ def main():
         analysis_mode=analysis_mode
     )
     
-    # Mostrar la tabla con encabezado integrado
+    # Crear encabezado con celdas agrupadas usando HTML
+    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    
+    header_html = """
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 0px;">
+        <thead>
+            <tr style="background-color: #f0f2f6;">
+                <th rowspan="2" style="border: 1px solid #ddd; padding: 8px; font-weight: bold; text-align: center; width: 15%;">Company</th>
+                <th rowspan="2" style="border: 1px solid #ddd; padding: 8px; font-weight: bold; text-align: center; width: 10%;">Average Mix</th>
+    """
+    
+    # Agregar columnas de meses con colspan=2
+    for month in months:
+        header_html += f'<th colspan="2" style="border: 1px solid #ddd; padding: 8px; font-weight: bold; text-align: center; width: 6.25%;">{month}</th>'
+    
+    header_html += """
+            </tr>
+            <tr style="background-color: #f8f9fa;">
+    """
+    
+    # Segunda fila: Value y Variability para cada mes
+    for month in months:
+        header_html += f'<th style="border: 1px solid #ddd; padding: 4px; font-weight: bold; text-align: center; font-size: 10px;">Value</th>'
+        header_html += f'<th style="border: 1px solid #ddd; padding: 4px; font-weight: bold; text-align: center; font-size: 10px;">Variability</th>'
+    
+    header_html += """
+            </tr>
+        </thead>
+    </table>
+    """
+    
+    # Mostrar encabezado HTML
+    st.markdown(header_html, unsafe_allow_html=True)
+    
+    # Mostrar la tabla de datos sin encabezado
     st.dataframe(
         styled_table,
         use_container_width=True,

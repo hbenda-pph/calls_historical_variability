@@ -316,71 +316,38 @@ def create_all_companies_variability_table(
         
         table_data.append(row_data)
     
-    # Crear encabezado con doble fila
-    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    
-    # Primera fila del encabezado: Meses agrupados
-    header_row1 = ['Company', 'Average Mix']
-    for month in months:
-        header_row1.extend([month, ''])  # Mes y espacio para variabilidad
-    
-    # Segunda fila del encabezado: Valores y Variabilidad
-    header_row2 = ['', '']
-    for month in months:
-        header_row2.extend(['Value', 'Variability'])
-    
-    # Combinar encabezado con datos
-    all_data = [header_row1, header_row2] + table_data
-    
-    # Crear DataFrame con encabezado integrado
-    df = pd.DataFrame(all_data, columns=columns)
+    # Crear DataFrame sin encabezado duplicado
+    df = pd.DataFrame(table_data, columns=columns)
     
     # Aplicar estilos
     def highlight_variability_table(row):
         styles = []
         
-        # Verificar si es fila de encabezado
-        if row.name < 2:  # Primeras dos filas son encabezado
-            for i in range(len(row)):
-                if i == 0:  # Primera columna
-                    styles.append('font-weight: bold; background-color: #f0f2f6')
-                elif i == 1:  # Segunda columna (Average Mix)
-                    styles.append('font-weight: bold; background-color: #f0f2f6')
-                else:
-                    # Columnas de meses
-                    col_name = row.index[i]
-                    if col_name.endswith('_var'):
-                        styles.append('font-weight: bold; background-color: #f8f9fa; font-size: 10px')
-                    else:
-                        styles.append('font-weight: bold; background-color: #e8f4f8; font-size: 10px')
-        else:
-            # Filas de datos
-            # Primera columna (Company) - negrita
-            styles.append('font-weight: bold; background-color: #f8f9fa')
+        # Primera columna (Company) - negrita
+        styles.append('font-weight: bold; background-color: #f8f9fa')
+        
+        # Segunda columna (Average Mix) - amarillo
+        styles.append('background-color: #fff2cc; font-weight: bold')
+        
+        # Columnas alternadas (Valor del mes + Variabilidad)
+        for i in range(2, len(row)):
+            col_name = row.index[i]
             
-            # Segunda columna (Average Mix) - amarillo
-            styles.append('background-color: #fff2cc; font-weight: bold')
-            
-            # Columnas alternadas (Valor del mes + Variabilidad)
-            for i in range(2, len(row)):
-                col_name = row.index[i]
-                
-                if col_name.endswith('_var'):
-                    # Columna de variabilidad
-                    var_value = row.iloc[i]
-                    if isinstance(var_value, str):
-                        if var_value.startswith('+'):
-                            styles.append('background-color: #d4edda; color: #155724')  # Verde para positivo
-                        elif var_value.startswith('-'):
-                            styles.append('background-color: #f8d7da; color: #721c24')  # Rojo para negativo
-                        else:
-                            styles.append('background-color: #f8f9fa')  # Gris para cero
+            if col_name.endswith('_var'):
+                # Columna de variabilidad
+                var_value = row.iloc[i]
+                if isinstance(var_value, str):
+                    if var_value.startswith('+'):
+                        styles.append('background-color: #d4edda; color: #155724')  # Verde para positivo
+                    elif var_value.startswith('-'):
+                        styles.append('background-color: #f8d7da; color: #721c24')  # Rojo para negativo
                     else:
-                        styles.append('background-color: #f8f9fa')
+                        styles.append('background-color: #f8f9fa')  # Gris para cero
                 else:
-                    # Columna de valor mensual
-                    styles.append('background-color: #e8f4f8')  # Azul claro
+                    styles.append('background-color: #f8f9fa')
+            else:
+                # Columna de valor mensual
+                styles.append('background-color: #e8f4f8')  # Azul claro
         
         return styles
     
@@ -439,51 +406,6 @@ def example_multiple_companies():
     return stats
 
 
-def example_all_companies_table():
-    """Ejemplo de uso para la tabla de todas las compañías."""
-    
-    # Crear DataFrame de ejemplo con datos de múltiples compañías
-    companies_data = []
-    
-    # Datos de ejemplo para cada compañía
-    companies_info = [
-        {
-            'company_name': 'Monarch HVAC',
-            'company_id': 1,
-            'monthly_calls': np.array([1200, 1100, 1300, 1400, 1500, 1600, 1700, 1600, 1500, 1400, 1300, 1200]),
-            'calls_percentages': np.array([8.33, 7.64, 9.03, 9.72, 10.42, 11.11, 11.81, 11.11, 10.42, 9.72, 9.03, 8.33])
-        },
-        {
-            'company_name': 'Elite Plumbing',
-            'company_id': 2,
-            'monthly_calls': np.array([1000, 900, 1100, 1200, 1300, 1400, 1500, 1400, 1300, 1200, 1100, 1000]),
-            'calls_percentages': np.array([7.89, 7.12, 8.45, 9.18, 9.91, 10.64, 11.37, 10.64, 9.91, 9.18, 8.45, 7.89])
-        },
-        {
-            'company_name': 'Premium Electric',
-            'company_id': 3,
-            'monthly_calls': np.array([1100, 1000, 1200, 1300, 1400, 1500, 1600, 1500, 1400, 1300, 1200, 1100]),
-            'calls_percentages': np.array([8.76, 8.12, 9.38, 10.04, 10.70, 11.36, 12.02, 11.36, 10.70, 10.04, 9.38, 8.76])
-        }
-    ]
-    
-    # Crear DataFrame
-    df_companies = pd.DataFrame(companies_info)
-    
-    # Crear tabla de variabilidad para todas las compañías
-    styled_table, df_table = create_all_companies_variability_table(
-        df_companies,
-        grouping_method="by_company",
-        analysis_mode="Percentages"
-    )
-    
-    print("Tabla de Variabilidad Histórica - Todas las Compañías")
-    print("=" * 60)
-    print("Estructura: Filas = Compañías, Columnas = Average Mix + Valores/Variabilidad alternados")
-    print("\nDataFrame (sin estilos):")
-    print(df_table.to_string(index=False))
-    
-    return styled_table, df_table
 
 
 if __name__ == "__main__":
@@ -496,8 +418,5 @@ if __name__ == "__main__":
     
     print("\n2. Ejemplo - Múltiples Compañías (Estadísticas):")
     example_multiple_companies()
-    
-    print("\n3. Ejemplo - Tabla Multi-Compañía:")
-    example_all_companies_table()
     
     print("\n✅ Script ejecutado exitosamente")

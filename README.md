@@ -225,7 +225,7 @@ docker run -p 8501:8501 historical-variability-dashboard
 # Deploy en PRO (producción - usuarios finales)
 ./build_deploy.sh pro
 
-# Si no especificas ambiente, por defecto usa DEV
+# Si no especificas ambiente, detecta automáticamente el proyecto activo
 ./build_deploy.sh
 ```
 
@@ -238,6 +238,40 @@ docker run -p 8501:8501 historical-variability-dashboard
 - DEV: `historical-variability-analyzer-dev`
 - QUA: `historical-variability-analyzer-qua`
 - PRO: `historical-variability-analyzer`
+
+#### **Configuración Inicial de Permisos (Solo Primera Vez)**
+
+Si es la primera vez que despliegas en un ambiente, necesitas configurar permisos:
+
+```bash
+# 1. Crear cuenta de servicio (si no existe)
+gcloud iam service-accounts create streamlit-bigquery-sa \
+    --display-name="Streamlit BigQuery Service Account" \
+    --project=platform-partners-des
+
+# 2. Permisos en proyecto propio
+gcloud projects add-iam-policy-binding platform-partners-des \
+    --member="serviceAccount:streamlit-bigquery-sa@platform-partners-des.iam.gserviceaccount.com" \
+    --role="roles/bigquery.jobUser"
+
+# 3. Permisos para acceder a pph-central
+gcloud projects add-iam-policy-binding pph-central \
+    --member="serviceAccount:streamlit-bigquery-sa@platform-partners-des.iam.gserviceaccount.com" \
+    --role="roles/bigquery.dataViewer"
+
+gcloud projects add-iam-policy-binding pph-central \
+    --member="serviceAccount:streamlit-bigquery-sa@platform-partners-des.iam.gserviceaccount.com" \
+    --role="roles/bigquery.jobUser"
+
+# 4. Permisos para tu usuario
+gcloud iam service-accounts add-iam-policy-binding \
+    streamlit-bigquery-sa@platform-partners-des.iam.gserviceaccount.com \
+    --member="user:gcloud@peachcfo.com" \
+    --role="roles/iam.serviceAccountUser" \
+    --project=platform-partners-des
+```
+
+**Nota:** Repite estos comandos para QUA y PRO cambiando `platform-partners-des` por el proyecto correspondiente.
 
 #### **Configuración de Google Sheets (Opcional)**
 Para habilitar la exportación a Google Sheets:

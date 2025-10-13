@@ -140,30 +140,30 @@ st.markdown("""
 <style>
     /* Reducir tamaño de títulos */
     h1 {
-        font-size: 1.5rem !important;
-        margin-bottom: 0.3rem !important;
-        margin-top: 0.5rem !important;
+        font-size: 1.8rem !important;
+        margin-bottom: 0.5rem !important;
+        margin-top: 0.8rem !important;
     }
     h2 {
-        font-size: 1.3rem !important;
-        margin-bottom: 0.3rem !important;
-        margin-top: 0.5rem !important;
+        font-size: 1.5rem !important;
+        margin-bottom: 0.4rem !important;
+        margin-top: 0.6rem !important;
     }
     h3 {
-        font-size: 1.1rem !important;
-        margin-bottom: 0.3rem !important;
-        margin-top: 0.5rem !important;
+        font-size: 1.3rem !important;
+        margin-bottom: 0.4rem !important;
+        margin-top: 0.6rem !important;
     }
     
     /* Reducir espacios en blanco */
     .block-container {
-        padding-top: 1rem !important;
-        padding-bottom: 0.5rem !important;
+        padding-top: 1.5rem !important;
+        padding-bottom: 1rem !important;
     }
     
     /* Reducir espacios entre elementos */
     .element-container {
-        margin-bottom: 0.3rem !important;
+        margin-bottom: 0.5rem !important;
     }
     
     /* Tabla más compacta */
@@ -173,23 +173,29 @@ st.markdown("""
     
     /* Captions más pequeños */
     .stCaption {
-        font-size: 10px;
-        margin-bottom: 0.2rem !important;
+        font-size: 11px;
+        margin-bottom: 0.3rem !important;
     }
     
     /* Reducir espacios en sidebar */
     .css-1d391kg {
-        padding-top: 1rem !important;
+        padding-top: 1.5rem !important;
     }
     
     /* Reducir espacios en selectbox */
     .stSelectbox {
-        margin-bottom: 0.5rem !important;
+        margin-bottom: 0.8rem !important;
     }
     
     /* Reducir espacios en botones */
     .stButton {
-        margin-bottom: 0.3rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    /* Reducir separadores */
+    hr {
+        margin-top: 0.5rem !important;
+        margin-bottom: 0.5rem !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -253,7 +259,8 @@ def main():
         
         # Botones de exportación compactos
         st.markdown(f"**{_('Export')}**")
-        export_sheets_button = st.button(f"📊 {_('Export to Google Sheets')}", use_container_width=True)
+        # export_sheets_button = st.button(f"📊 {_('Export to Google Sheets')}", use_container_width=True)  # Oculto temporalmente
+        export_sheets_button = False  # Deshabilitado hasta configurar permisos
         export_csv_button = st.button(f"📄 {_('Export to CSV')}", use_container_width=True)
     
     # Contenido principal sin subtítulo
@@ -294,8 +301,7 @@ def main():
     st.dataframe(
         styled_table,
         use_container_width=True,
-        hide_index=True,
-        height=None
+        hide_index=True
     )
     
     # Exportación a Google Sheets

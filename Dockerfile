@@ -13,11 +13,17 @@ COPY requirements.txt .
 # Instalar dependencias de Python
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copiar módulo compartido
+COPY ../analysis_predictive_shared /app/analysis_predictive_shared
+
 # Copiar código fuente
 COPY . .
 
 # Crear directorio de traducciones si no existe
 RUN mkdir -p locales
+
+# Agregar shared al PYTHONPATH
+ENV PYTHONPATH="${PYTHONPATH}:/app/analysis_predictive_shared"
 
 # Exponer puerto
 EXPOSE 8501

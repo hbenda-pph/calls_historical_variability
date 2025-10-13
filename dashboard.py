@@ -21,8 +21,13 @@ import locale
 import io
 import base64
 import os
+import sys
 import warnings
 warnings.filterwarnings('ignore')
+
+# Importar estilos compartidos
+sys.path.append(os.path.join(os.path.dirname(__file__), '../analysis_predictive_shared'))
+from streamlit_config import apply_standard_styles
 
 # Configuración de la página
 st.set_page_config(
@@ -135,70 +140,8 @@ def get_companies_variability_data():
         st.error(f"Error al obtener datos de BigQuery: {str(e)}")
         return pd.DataFrame()
 
-# CSS compacto para mejor presentación
-st.markdown("""
-<style>
-    /* Reducir tamaño de títulos */
-    h1 {
-        font-size: 1.8rem !important;
-        margin-bottom: 0.5rem !important;
-        margin-top: 0.8rem !important;
-    }
-    h2 {
-        font-size: 1.5rem !important;
-        margin-bottom: 0.4rem !important;
-        margin-top: 0.6rem !important;
-    }
-    h3 {
-        font-size: 1.3rem !important;
-        margin-bottom: 0.4rem !important;
-        margin-top: 0.6rem !important;
-    }
-    
-    /* Reducir espacios en blanco */
-    .block-container {
-        padding-top: 1.5rem !important;
-        padding-bottom: 1rem !important;
-    }
-    
-    /* Reducir espacios entre elementos */
-    .element-container {
-        margin-bottom: 0.5rem !important;
-    }
-    
-    /* Tabla más compacta */
-    .stDataFrame {
-        font-size: 11px;
-    }
-    
-    /* Captions más pequeños */
-    .stCaption {
-        font-size: 11px;
-        margin-bottom: 0.3rem !important;
-    }
-    
-    /* Reducir espacios en sidebar */
-    .css-1d391kg {
-        padding-top: 1.5rem !important;
-    }
-    
-    /* Reducir espacios en selectbox */
-    .stSelectbox {
-        margin-bottom: 0.8rem !important;
-    }
-    
-    /* Reducir espacios en botones */
-    .stButton {
-        margin-bottom: 0.5rem !important;
-    }
-    
-    /* Reducir separadores */
-    hr {
-        margin-top: 0.5rem !important;
-        margin-bottom: 0.5rem !important;
-    }
-</style>
-""", unsafe_allow_html=True)
+# Aplicar estilos compartidos
+apply_standard_styles()
 
 
 def export_to_google_sheets(df, sheet_name="Historical_Variability"):

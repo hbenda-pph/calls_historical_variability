@@ -214,15 +214,30 @@ docker build -t historical-variability-dashboard .
 docker run -p 8501:8501 historical-variability-dashboard
 ```
 
-#### **Deploy a Google Cloud Run**
+#### **Deploy a Google Cloud Run (Multi-Ambiente)**
 ```bash
-# Ejecutar script de build & deploy
-./build_deploy.sh
+# Deploy en DEV (desarrollo y testing - solo tú)
+./build_deploy.sh dev
 
-# O manualmente:
-gcloud builds submit --tag gcr.io/platform-partners-qua/historical-variability-analyzer
-gcloud run deploy historical-variability-analyzer --image gcr.io/platform-partners-qua/historical-variability-analyzer --platform managed --region us-east1 --allow-unauthenticated --port 8501
+# Deploy en QUA (validación y QA - equipo interno)
+./build_deploy.sh qua
+
+# Deploy en PRO (producción - usuarios finales)
+./build_deploy.sh pro
+
+# Si no especificas ambiente, por defecto usa DEV
+./build_deploy.sh
 ```
+
+**Ambientes:**
+- **DEV** (`platform-partners-des`): Para desarrollo y testing
+- **QUA** (`platform-partners-qua`): Para validación y QA
+- **PRO** (`platform-partners-pro`): Para usuarios finales
+
+**Nombres de Servicio:**
+- DEV: `historical-variability-analyzer-dev`
+- QUA: `historical-variability-analyzer-qua`
+- PRO: `historical-variability-analyzer`
 
 #### **Configuración de Google Sheets (Opcional)**
 Para habilitar la exportación a Google Sheets:

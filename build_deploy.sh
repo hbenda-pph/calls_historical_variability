@@ -112,9 +112,30 @@ if [ "$CURRENT_PROJECT" != "$PROJECT_ID" ]; then
 fi
 
 echo ""
-echo "🔨 PASO 1: BUILD (Creando imagen Docker)"
+echo "📦 PASO 1: PREPARACIÓN (Copiando módulo shared)"
+echo "================================================"
+
+# Copiar módulo shared al directorio actual
+if [ -d "../analysis_predictive_shared" ]; then
+    echo "📂 Copiando analysis_predictive_shared..."
+    cp -r ../analysis_predictive_shared ./analysis_predictive_shared
+    echo "✅ Módulo shared copiado"
+else
+    echo "⚠️  Advertencia: No se encontró ../analysis_predictive_shared"
+    echo "⚠️  El dashboard funcionará sin estilos compartidos"
+fi
+
+echo ""
+echo "🔨 PASO 2: BUILD (Creando imagen Docker)"
 echo "=========================================="
 gcloud builds submit --tag ${IMAGE_TAG}
+
+# Limpiar módulo shared copiado
+if [ -d "./analysis_predictive_shared" ]; then
+    echo "🧹 Limpiando archivos temporales..."
+    rm -rf ./analysis_predictive_shared
+    echo "✅ Limpieza completada"
+fi
 
 if [ $? -eq 0 ]; then
     echo "✅ Build exitoso!"

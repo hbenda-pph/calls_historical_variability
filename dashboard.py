@@ -135,40 +135,61 @@ def get_companies_variability_data():
         st.error(f"Error al obtener datos de BigQuery: {str(e)}")
         return pd.DataFrame()
 
-# CSS personalizado para el encabezado con doble fila
+# CSS compacto para mejor presentación
 st.markdown("""
 <style>
-    .multi-level-header {
-        background-color: #f0f2f6;
-        border: 1px solid #ddd;
-        padding: 8px;
-        text-align: center;
-        font-weight: bold;
+    /* Reducir tamaño de títulos */
+    h1 {
+        font-size: 1.5rem !important;
+        margin-bottom: 0.3rem !important;
+        margin-top: 0.5rem !important;
+    }
+    h2 {
+        font-size: 1.3rem !important;
+        margin-bottom: 0.3rem !important;
+        margin-top: 0.5rem !important;
+    }
+    h3 {
+        font-size: 1.1rem !important;
+        margin-bottom: 0.3rem !important;
+        margin-top: 0.5rem !important;
     }
     
-    .month-header {
-        background-color: #e8f4f8;
-        border: 1px solid #ddd;
-        padding: 4px;
-        text-align: center;
-        font-weight: bold;
-        font-size: 12px;
+    /* Reducir espacios en blanco */
+    .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 0.5rem !important;
     }
     
-    .value-header {
-        background-color: #e8f4f8;
-        border: 1px solid #ddd;
-        padding: 4px;
-        text-align: center;
+    /* Reducir espacios entre elementos */
+    .element-container {
+        margin-bottom: 0.3rem !important;
+    }
+    
+    /* Tabla más compacta */
+    .stDataFrame {
+        font-size: 11px;
+    }
+    
+    /* Captions más pequeños */
+    .stCaption {
         font-size: 10px;
+        margin-bottom: 0.2rem !important;
     }
     
-    .variability-header {
-        background-color: #f8f9fa;
-        border: 1px solid #ddd;
-        padding: 4px;
-        text-align: center;
-        font-size: 10px;
+    /* Reducir espacios en sidebar */
+    .css-1d391kg {
+        padding-top: 1rem !important;
+    }
+    
+    /* Reducir espacios en selectbox */
+    .stSelectbox {
+        margin-bottom: 0.5rem !important;
+    }
+    
+    /* Reducir espacios en botones */
+    .stButton {
+        margin-bottom: 0.3rem !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -203,54 +224,39 @@ def export_to_google_sheets(df, sheet_name="Historical_Variability"):
 def main():
     """Función principal del dashboard."""
     
-    # Título principal
-    st.title(f"📊 {_('Historical Variability Analyzer')}")
-    st.markdown("---")
+    # Título principal compacto
+    st.markdown(f"### {_('Historical Variability Analyzer')}")
     
     # Panel de control izquierdo
     with st.sidebar:
-        st.header(f"🎛️ {_('Control Panel')}")
+        st.markdown(f"**{_('Control Panel')}**")
         
         # Selector de modo de análisis
         analysis_mode = st.selectbox(
             _("Analysis Mode"),
             options=["Percentages", "Absolute"],
-            index=0,
-            help=_("Select whether to view percentages or absolute call quantities")
+            index=0
         )
         
         st.markdown("---")
         
-        # Información del análisis
-        st.subheader(f"ℹ️ {_('Analysis Information')}")
-        st.info(f"""
-        **{_('Current Mode')}**: {analysis_mode}
-        
-        **{_('Table Structure')}**:
-        - {_('Rows')}: {_('Companies')}
-        - {_('Columns')}: {_('Average Mix')} + {_('Monthly Values')}/{_('Variability')} alternated
-        
-        **{_('Colors')}**:
-        - 🟡 {_('Yellow')}: {_('Average Mix')}
-        - 🔵 {_('Blue')}: {_('Monthly Values')}
-        - 🟢 {_('Green')}: {_('Positive Variability')}
-        - 🔴 {_('Red')}: {_('Negative Variability')}
+        # Información compacta
+        st.markdown(f"**{_('Colors')}**")
+        st.markdown(f"""
+        🟡 {_('Average Mix')}  
+        🔵 {_('Monthly Values')}  
+        🟢 {_('Positive Variability')}  
+        🔴 {_('Negative Variability')}
         """)
         
         st.markdown("---")
         
-        # Botón de exportación
-        st.subheader(f"📤 {_('Export')}")
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            export_sheets_button = st.button(f"📊 {_('Export to Google Sheets')}", type="primary")
-        
-        with col2:
-            export_csv_button = st.button(f"📄 {_('Export to CSV')}", type="secondary")
+        # Botones de exportación compactos
+        st.markdown(f"**{_('Export')}**")
+        export_sheets_button = st.button(f"📊 {_('Export to Google Sheets')}", use_container_width=True)
+        export_csv_button = st.button(f"📄 {_('Export to CSV')}", use_container_width=True)
     
-    # Contenido principal
-    st.subheader(f"📈 {_('Historical Variability Table - All Companies')}")
+    # Contenido principal sin subtítulo
     
     # Obtener datos reales de BigQuery
     with st.spinner(_("Loading data from BigQuery...")):
@@ -267,29 +273,30 @@ def main():
         analysis_mode=analysis_mode
     )
     
-    # Mostrar la tabla normal
-    st.dataframe(
-        styled_table,
-        use_container_width=True,
-        hide_index=True
-    )
-    
-    # Información adicional
-    col1, col2, col3 = st.columns(3)
+    # Información compacta en una sola línea
+    col1, col2, col3 = st.columns([1, 1, 1])
     
     with col1:
-        st.metric(_("Total Companies"), len(companies_data))
+        st.caption(f"📊 {len(companies_data)} {_('Companies')}")
     
     with col2:
         if analysis_mode == "Percentages":
             avg_overall = np.mean([np.mean(row['calls_percentages']) for _, row in companies_data.iterrows()])
-            st.metric(_("Overall Average"), f"{avg_overall:.2f}%")
+            st.caption(f"📈 Avg: {avg_overall:.2f}%")
         else:
             avg_overall = np.mean([np.mean(row['monthly_calls']) for _, row in companies_data.iterrows()])
-            st.metric(_("Overall Average"), f"{avg_overall:,.0f}")
+            st.caption(f"📈 Avg: {avg_overall:,.0f}")
     
     with col3:
-        st.metric(_("Period"), f"12 {_('months')}")
+        st.caption(f"📅 12 {_('months')}")
+    
+    # Mostrar la tabla completa sin scrollbar
+    st.dataframe(
+        styled_table,
+        use_container_width=True,
+        hide_index=True,
+        height=None
+    )
     
     # Exportación a Google Sheets
     if export_sheets_button:
@@ -312,9 +319,9 @@ def main():
             mime="text/csv",
         )
     
-    # Footer
+    # Footer compacto
     st.markdown("---")
-    st.markdown(f"**{_('Developed by')}**: Platform Partners Team | **{_('Version')}**: 1.0")
+    st.caption(f"{_('Developed by')}: Platform Partners Team | {_('Version')}: 1.0")
 
 if __name__ == "__main__":
     main()

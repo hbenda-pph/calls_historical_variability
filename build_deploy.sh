@@ -152,7 +152,8 @@ gcloud run deploy ${SERVICE_NAME} \
     --platform managed \
     --region ${REGION} \
     --allow-unauthenticated \
-    --port 8501
+    --port 8501 \
+    --service-account ${SERVICE_ACCOUNT}
 
 if [ $? -eq 0 ]; then
     echo "✅ Deploy exitoso!"

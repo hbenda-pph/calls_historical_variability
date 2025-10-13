@@ -145,15 +145,14 @@ else
 fi
 
 echo ""
-echo "🚀 PASO 2: DEPLOY (Desplegando a Cloud Run)"
+echo "🚀 PASO 3: DEPLOY (Desplegando a Cloud Run)"
 echo "============================================="
 gcloud run deploy ${SERVICE_NAME} \
     --image ${IMAGE_TAG} \
     --platform managed \
     --region ${REGION} \
     --allow-unauthenticated \
-    --port 8501 \
-    --service-account ${SERVICE_ACCOUNT}
+    --port 8501
 
 if [ $? -eq 0 ]; then
     echo "✅ Deploy exitoso!"

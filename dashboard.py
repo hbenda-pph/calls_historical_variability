@@ -88,7 +88,7 @@ def get_companies_variability_data():
             , c.company_name AS `company_name`
             , EXTRACT(MONTH FROM DATE(cl.lead_call_created_on)) AS `month`
             , COUNT(cl.lead_call_id) AS `calls`
-        FROM `pph-central.silver.vw_consolidated_call_inbound_location` cl
+        FROM `pph-central.analytical.vw_consolidated_call_inbound_location` cl
         JOIN `pph-central.settings.companies` c ON cl.company_id = c.company_id
         WHERE DATE(cl.lead_call_created_on) < DATE("2025-10-01")
           AND EXTRACT(YEAR FROM DATE(cl.lead_call_created_on)) >= 2015

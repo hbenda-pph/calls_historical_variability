@@ -38,12 +38,15 @@ if [ -n "$1" ]; then
     case "$ENVIRONMENT" in
         dev)
             PROJECT_ID="platform-partners-des"
+            PROJECT_NAME="platform-partners-des"
             ;;
         qua)
             PROJECT_ID="platform-partners-qua"
+            PROJECT_NAME="platform-partners-qua"
             ;;
         pro)
             PROJECT_ID="constant-height-455614-i0"
+            PROJECT_NAME="platform-partners-pro"
             ;;
     esac
 else
@@ -55,16 +58,19 @@ else
         platform-partners-des)
             ENVIRONMENT="dev"
             PROJECT_ID="platform-partners-des"
+            PROJECT_NAME="platform-partners-des"
             echo "✅ Detectado: DEV (platform-partners-des)"
             ;;
         platform-partners-qua)
             ENVIRONMENT="qua"
             PROJECT_ID="platform-partners-qua"
+            PROJECT_NAME="platform-partners-qua"
             echo "✅ Detectado: QUA (platform-partners-qua)"
             ;;
-        platform-partners-pro)
+        constant-height-455614-i0)
             ENVIRONMENT="pro"
             PROJECT_ID="constant-height-455614-i0"
+            PROJECT_NAME="platform-partners-pro"
             echo "✅ Detectado: PRO (platform-partners-pro)"
             ;;
         *)
@@ -72,6 +78,7 @@ else
             echo "⚠️  No se reconoce el proyecto. Usando DEV por defecto."
             ENVIRONMENT="dev"
             PROJECT_ID="platform-partners-des"
+            PROJECT_NAME="platform-partners-des"
             ;;
     esac
 fi
@@ -97,7 +104,7 @@ IMAGE_TAG="gcr.io/${PROJECT_ID}/${SERVICE_NAME}"
 
 echo "🚀 Iniciando Build & Deploy para Historical Variability Analyzer"
 echo "================================================================"
-echo "🌍 AMBIENTE: ${ENVIRONMENT^^}"
+echo "🌍 AMBIENTE: ${ENVIRONMENT^^} (${PROJECT_NAME})"
 echo "📋 Configuración:"
 echo "   Proyecto: ${PROJECT_ID}"
 echo "   Servicio: ${SERVICE_NAME}"
@@ -181,7 +188,7 @@ echo ""
 echo "🎉 ¡DEPLOY COMPLETADO EXITOSAMENTE!"
 echo "=================================="
 echo ""
-echo "🌍 AMBIENTE: ${ENVIRONMENT^^}"
+echo "🌍 AMBIENTE: ${ENVIRONMENT^^} (${PROJECT_NAME})"
 echo "📊 Para ver tu dashboard:"
 echo "   1. Ve a: https://console.cloud.google.com/run?project=${PROJECT_ID}"
 echo "   2. Selecciona el servicio: ${SERVICE_NAME}"
@@ -191,14 +198,14 @@ echo "🔧 Para ver logs en tiempo real:"
 echo "   gcloud logs tail --service=${SERVICE_NAME} --region=${REGION} --project=${PROJECT_ID}"
 echo ""
 echo "🔄 Para deploy en otros ambientes:"
-echo "   ./build_deploy.sh dev    # Deploy en DEV (solo para testing)"
-echo "   ./build_deploy.sh qua    # Deploy en QUA (para validación)"
-echo "   ./build_deploy.sh pro    # Deploy en PRO (usuarios finales)"
+echo "   ./build_deploy.sh dev    # Deploy en DEV (platform-partners-des)"
+echo "   ./build_deploy.sh qua    # Deploy en QUA (platform-partners-qua)"
+echo "   ./build_deploy.sh pro    # Deploy en PRO (platform-partners-pro)"
 echo ""
 echo "🛑 Para detener el servicio:"
 echo "   gcloud run services delete ${SERVICE_NAME} --region=${REGION} --project=${PROJECT_ID}"
 echo ""
 echo "📝 Notas:"
-echo "   - DEV: Para desarrollo y testing (solo tú)"
-echo "   - QUA: Para validación y QA (equipo interno)"
-echo "   - PRO: Para usuarios finales (producción)"
+echo "   - DEV (platform-partners-des): Para desarrollo y testing (solo tú)"
+echo "   - QUA (platform-partners-qua): Para validación y QA (equipo interno)"
+echo "   - PRO (platform-partners-pro): Para usuarios finales (producción)"

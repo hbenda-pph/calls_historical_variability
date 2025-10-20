@@ -173,8 +173,8 @@ def export_to_google_sheets(df, sheet_name="Historical_Variability"):
 def main():
     """Función principal del dashboard."""
     
-    # Título principal compacto
-    st.markdown(f"### {_('Historical Variability Analyzer')}")
+    # Título principal
+    st.markdown(f"## {_('Historical Variability Analyzer')}")
     
     # Panel de control izquierdo
     with st.sidebar:

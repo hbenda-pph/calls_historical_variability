@@ -33,47 +33,62 @@ if [ -n "$1" ]; then
         echo "O ejecuta sin parámetros para usar el proyecto activo de gcloud"
         exit 1
     fi
+    
+    # Configurar PROJECT_ID según parámetro
+    case "$ENVIRONMENT" in
+        dev)
+            PROJECT_ID="platform-partners-des"
+            ;;
+        qua)
+            PROJECT_ID="platform-partners-qua"
+            ;;
+        pro)
+            PROJECT_ID="constant-height-455614-i0"
+            ;;
+    esac
 else
     # Detectar automáticamente según el proyecto activo
     echo "🔍 Detectando ambiente desde proyecto activo de gcloud..."
+    echo "   Proyecto activo: ${CURRENT_PROJECT}"
     
     case "$CURRENT_PROJECT" in
         platform-partners-des)
             ENVIRONMENT="dev"
+            PROJECT_ID="platform-partners-des"
             echo "✅ Detectado: DEV (platform-partners-des)"
             ;;
         platform-partners-qua)
             ENVIRONMENT="qua"
+            PROJECT_ID="platform-partners-qua"
             echo "✅ Detectado: QUA (platform-partners-qua)"
             ;;
         platform-partners-pro)
             ENVIRONMENT="pro"
+            PROJECT_ID="constant-height-455614-i0"
             echo "✅ Detectado: PRO (platform-partners-pro)"
             ;;
         *)
             echo "⚠️  Proyecto activo: ${CURRENT_PROJECT}"
             echo "⚠️  No se reconoce el proyecto. Usando DEV por defecto."
             ENVIRONMENT="dev"
+            PROJECT_ID="platform-partners-des"
             ;;
     esac
 fi
 
-# Configuración según ambiente
+# Configuración de SERVICE_NAME y SERVICE_ACCOUNT según ambiente
 case "$ENVIRONMENT" in
     dev)
-        PROJECT_ID="platform-partners-des"
         SERVICE_NAME="historical-variability-analyzer-dev"
-        SERVICE_ACCOUNT="streamlit-bigquery-sa@platform-partners-des.iam.gserviceaccount.com"
+        SERVICE_ACCOUNT="streamlit-bigquery-sa@${PROJECT_ID}.iam.gserviceaccount.com"
         ;;
     qua)
-        PROJECT_ID="platform-partners-qua"
         SERVICE_NAME="historical-variability-analyzer-qua"
-        SERVICE_ACCOUNT="streamlit-bigquery-sa@platform-partners-qua.iam.gserviceaccount.com"
+        SERVICE_ACCOUNT="streamlit-bigquery-sa@${PROJECT_ID}.iam.gserviceaccount.com"
         ;;
     pro)
-        PROJECT_ID="platform-partners-pro"
         SERVICE_NAME="historical-variability-analyzer"
-        SERVICE_ACCOUNT="streamlit-bigquery-sa@platform-partners-pro.iam.gserviceaccount.com"
+        SERVICE_ACCOUNT="streamlit-bigquery-sa@${PROJECT_ID}.iam.gserviceaccount.com"
         ;;
 esac
 

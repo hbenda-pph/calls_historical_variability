@@ -90,7 +90,7 @@ def _(text):
 # FUNCIONES DE DATOS REALES
 # =============================================================================
 
-@st.cache_data
+@st.cache_data(ttl=3600)  # Cache por 1 hora (3600 segundos)
 def get_companies_variability_data():
     """
     Extrae datos de variabilidad histórica de todas las compañías desde BigQuery.

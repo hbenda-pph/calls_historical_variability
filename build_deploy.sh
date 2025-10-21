@@ -137,10 +137,19 @@ echo ""
 echo "📦 PASO 1: PREPARACIÓN (Copiando módulo shared)"
 echo "================================================"
 
-# Copiar módulo shared al directorio actual
+# Copiar módulo shared al directorio actual (sin .git)
 if [ -d "../analysis_predictive_shared" ]; then
     echo "📂 Copiando analysis_predictive_shared..."
-    cp -r ../analysis_predictive_shared ./analysis_predictive_shared
+    
+    # Limpiar copias previas si existen
+    if [ -d "./analysis_predictive_shared" ]; then
+        rm -rf ./analysis_predictive_shared
+    fi
+    
+    # Copiar solo archivos Python, excluyendo .git
+    mkdir -p ./analysis_predictive_shared
+    cp ../analysis_predictive_shared/*.py ./analysis_predictive_shared/ 2>/dev/null || true
+    
     echo "✅ Módulo shared copiado"
 else
     echo "⚠️  Advertencia: No se encontró ../analysis_predictive_shared"

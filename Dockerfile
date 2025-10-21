@@ -19,8 +19,8 @@ RUN apt-get update && apt-get install -y gettext && rm -rf /var/lib/apt/lists/*
 # Copy application code
 COPY . .
 
-# Compile translations
-RUN python compile_translations.py
+# Compile translations (si existe el archivo)
+RUN if [ -f "compile_translations.py" ]; then python compile_translations.py || true; fi
 
 # Expose port
 EXPOSE 8501

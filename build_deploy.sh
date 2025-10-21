@@ -163,13 +163,6 @@ else
     exit 1
 fi
 
-# Limpiar módulo shared copiado después del build exitoso
-if [ -d "./analysis_predictive_shared" ]; then
-    echo "🧹 Limpiando archivos temporales..."
-    rm -rf ./analysis_predictive_shared
-    echo "✅ Limpieza completada"
-fi
-
 echo ""
 echo "🚀 PASO 3: DEPLOY (Desplegando a Cloud Run)"
 echo "============================================="
@@ -186,6 +179,13 @@ if [ $? -eq 0 ]; then
 else
     echo "❌ Error en el deploy"
     exit 1
+fi
+
+# Limpiar módulo shared copiado después del deploy exitoso
+if [ -d "./analysis_predictive_shared" ]; then
+    echo "🧹 Limpiando archivos temporales..."
+    rm -rf ./analysis_predictive_shared
+    echo "✅ Limpieza completada"
 fi
 
 echo ""

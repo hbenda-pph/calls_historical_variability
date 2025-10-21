@@ -33,69 +33,47 @@ if [ -n "$1" ]; then
         echo "O ejecuta sin parámetros para usar el proyecto activo de gcloud"
         exit 1
     fi
-    
-    # Configurar PROJECT_ID según parámetro
-    case "$ENVIRONMENT" in
-        dev)
-            PROJECT_ID="platform-partners-des"
-            PROJECT_NAME="platform-partners-des"
-            ;;
-        qua)
-            PROJECT_ID="platform-partners-qua"
-            PROJECT_NAME="platform-partners-qua"
-            ;;
-        pro)
-            PROJECT_ID="constant-height-455614-i0"
-            PROJECT_NAME="platform-partners-pro"
-            ;;
-    esac
 else
     # Detectar automáticamente según el proyecto activo
     echo "🔍 Detectando ambiente desde proyecto activo de gcloud..."
-    echo "   Proyecto activo: ${CURRENT_PROJECT}"
     
     case "$CURRENT_PROJECT" in
         platform-partners-des)
             ENVIRONMENT="dev"
-            PROJECT_ID="platform-partners-des"
-            PROJECT_NAME="platform-partners-des"
             echo "✅ Detectado: DEV (platform-partners-des)"
             ;;
         platform-partners-qua)
             ENVIRONMENT="qua"
-            PROJECT_ID="platform-partners-qua"
-            PROJECT_NAME="platform-partners-qua"
             echo "✅ Detectado: QUA (platform-partners-qua)"
             ;;
         constant-height-455614-i0)
             ENVIRONMENT="pro"
-            PROJECT_ID="constant-height-455614-i0"
-            PROJECT_NAME="platform-partners-pro"
             echo "✅ Detectado: PRO (platform-partners-pro)"
             ;;
         *)
             echo "⚠️  Proyecto activo: ${CURRENT_PROJECT}"
             echo "⚠️  No se reconoce el proyecto. Usando DEV por defecto."
             ENVIRONMENT="dev"
-            PROJECT_ID="platform-partners-des"
-            PROJECT_NAME="platform-partners-des"
             ;;
     esac
 fi
 
-# Configuración de SERVICE_NAME y SERVICE_ACCOUNT según ambiente
+# Configuración según ambiente
 case "$ENVIRONMENT" in
     dev)
+        PROJECT_ID="platform-partners-des"
         SERVICE_NAME="historical-variability-analyzer-dev"
-        SERVICE_ACCOUNT="streamlit-bigquery-sa@${PROJECT_ID}.iam.gserviceaccount.com"
+        SERVICE_ACCOUNT="streamlit-bigquery-sa@platform-partners-des.iam.gserviceaccount.com"
         ;;
     qua)
+        PROJECT_ID="platform-partners-qua"
         SERVICE_NAME="historical-variability-analyzer-qua"
-        SERVICE_ACCOUNT="streamlit-bigquery-sa@${PROJECT_ID}.iam.gserviceaccount.com"
+        SERVICE_ACCOUNT="streamlit-bigquery-sa@platform-partners-qua.iam.gserviceaccount.com"
         ;;
     pro)
+        PROJECT_ID="constant-height-455614-i0"
         SERVICE_NAME="historical-variability-analyzer"
-        SERVICE_ACCOUNT="streamlit-bigquery-sa@${PROJECT_ID}.iam.gserviceaccount.com"
+        SERVICE_ACCOUNT="streamlit-bigquery-sa@constant-height-455614-i0.iam.gserviceaccount.com"
         ;;
 esac
 
@@ -104,7 +82,7 @@ IMAGE_TAG="gcr.io/${PROJECT_ID}/${SERVICE_NAME}"
 
 echo "🚀 Iniciando Build & Deploy para Historical Variability Analyzer"
 echo "================================================================"
-echo "🌍 AMBIENTE: ${ENVIRONMENT^^} (${PROJECT_NAME})"
+echo "🌍 AMBIENTE: ${ENVIRONMENT^^}"
 echo "📋 Configuración:"
 echo "   Proyecto: ${PROJECT_ID}"
 echo "   Servicio: ${SERVICE_NAME}"
@@ -134,25 +112,53 @@ if [ "$CURRENT_PROJECT" != "$PROJECT_ID" ]; then
 fi
 
 echo ""
-echo "📦 PASO 1: PREPARACIÓN (Copiando módulo shared)"
-echo "================================================"
+echo "📦 PASO 1: PREPARACIÓN (Copiando módulo shared y verificando archivos)"
+echo "======================================================================="
 
 # Copiar módulo shared al directorio actual
 if [ -d "../analysis_predictive_shared" ]; then
     echo "📂 Copiando analysis_predictive_shared..."
-    
-    # Limpiar copias previas si existen
-    if [ -d "./analysis_predictive_shared" ]; then
-        rm -rf ./analysis_predictive_shared
-    fi
-    
-    # Copiar usando rsync para excluir .git
-    rsync -av --exclude='.git' ../analysis_predictive_shared ./
-    
+    cp -r ../analysis_predictive_shared ./analysis_predictive_shared
     echo "✅ Módulo shared copiado"
 else
     echo "⚠️  Advertencia: No se encontró ../analysis_predictive_shared"
     echo "⚠️  El dashboard funcionará sin estilos compartidos"
+fi
+
+# Verificar archivos necesarios
+if [ -f "dashboard.py" ]; then
+    echo "✅ dashboard.py encontrado"
+else
+    echo "❌ dashboard.py no encontrado"
+    exit 1
+fi
+
+if [ -f "requirements.txt" ]; then
+    echo "✅ requirements.txt encontrado"
+else
+    echo "❌ requirements.txt no encontrado"
+    exit 1
+fi
+
+if [ -f "Dockerfile" ]; then
+    echo "✅ Dockerfile encontrado"
+else
+    echo "❌ Dockerfile no encontrado"
+    exit 1
+fi
+
+# Verificar traducciones compiladas
+if [ -d "locales" ]; then
+    echo "✅ Directorio locales encontrado"
+    
+    # Compilar traducciones si es necesario
+    if [ -f "compile_translations.py" ]; then
+        echo "🔄 Compilando traducciones..."
+        python3 compile_translations.py
+        echo "✅ Traducciones compiladas"
+    fi
+else
+    echo "⚠️  Advertencia: No se encontró directorio locales"
 fi
 
 echo ""
@@ -160,14 +166,17 @@ echo "🔨 PASO 2: BUILD (Creando imagen Docker)"
 echo "=========================================="
 gcloud builds submit --tag ${IMAGE_TAG}
 
+# Limpiar módulo shared copiado
+if [ -d "./analysis_predictive_shared" ]; then
+    echo "🧹 Limpiando archivos temporales..."
+    rm -rf ./analysis_predictive_shared
+    echo "✅ Limpieza completada"
+fi
+
 if [ $? -eq 0 ]; then
     echo "✅ Build exitoso!"
 else
     echo "❌ Error en el build"
-    # Limpiar antes de salir en caso de error
-    if [ -d "./analysis_predictive_shared" ]; then
-        rm -rf ./analysis_predictive_shared
-    fi
     exit 1
 fi
 
@@ -189,18 +198,11 @@ else
     exit 1
 fi
 
-# Limpiar módulo shared copiado después del deploy exitoso
-if [ -d "./analysis_predictive_shared" ]; then
-    echo "🧹 Limpiando archivos temporales..."
-    rm -rf ./analysis_predictive_shared
-    echo "✅ Limpieza completada"
-fi
-
 echo ""
 echo "🎉 ¡DEPLOY COMPLETADO EXITOSAMENTE!"
 echo "=================================="
 echo ""
-echo "🌍 AMBIENTE: ${ENVIRONMENT^^} (${PROJECT_NAME})"
+echo "🌍 AMBIENTE: ${ENVIRONMENT^^}"
 echo "📊 Para ver tu dashboard:"
 echo "   1. Ve a: https://console.cloud.google.com/run?project=${PROJECT_ID}"
 echo "   2. Selecciona el servicio: ${SERVICE_NAME}"

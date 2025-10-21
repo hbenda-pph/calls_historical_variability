@@ -1,54 +1,53 @@
+# =============================================================================
+# .DOCKERIGNORE PARA OPTIMIZAR BUILD EN CLOUD RUN
+# =============================================================================
+
+# Git
+.git
+.gitignore
+
 # Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
+__pycache__
+*.pyc
+*.pyo
+*.pyd
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Virtual environments
-venv/
-env/
-ENV/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
+env
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git
+.mypy_cache
+.pytest_cache
+.hypothesis
 
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# Git
-.git/
-.gitignore
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
 
 # Documentation
+README.md
 *.md
-!README.md
 
-# Logs
-*.log
-
-# Temporary files
-*.tmp
-*.temp
-
-# Keep locales directory
-!locales/
+# Test files
+test_*
+*_test.py
+tests/

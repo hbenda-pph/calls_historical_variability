@@ -26,8 +26,19 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Importar estilos compartidos
-sys.path.append(os.path.join(os.path.dirname(__file__), '../analysis_predictive_shared'))
-from streamlit_config import apply_standard_styles
+try:
+    # En desarrollo local
+    sys.path.append(os.path.join(os.path.dirname(__file__), '../analysis_predictive_shared'))
+    from streamlit_config import apply_standard_styles
+except ImportError:
+    try:
+        # En Docker/Cloud Run (copiado dentro del proyecto)
+        sys.path.append(os.path.join(os.path.dirname(__file__), 'analysis_predictive_shared'))
+        from streamlit_config import apply_standard_styles
+    except ImportError:
+        # Fallback: Sin estilos compartidos
+        def apply_standard_styles():
+            pass
 
 # Configuración de la página
 st.set_page_config(

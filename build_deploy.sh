@@ -152,18 +152,22 @@ echo "🔨 PASO 2: BUILD (Creando imagen Docker)"
 echo "=========================================="
 gcloud builds submit --tag ${IMAGE_TAG}
 
-# Limpiar módulo shared copiado
-if [ -d "./analysis_predictive_shared" ]; then
-    echo "🧹 Limpiando archivos temporales..."
-    rm -rf ./analysis_predictive_shared
-    echo "✅ Limpieza completada"
-fi
-
 if [ $? -eq 0 ]; then
     echo "✅ Build exitoso!"
 else
     echo "❌ Error en el build"
+    # Limpiar antes de salir en caso de error
+    if [ -d "./analysis_predictive_shared" ]; then
+        rm -rf ./analysis_predictive_shared
+    fi
     exit 1
+fi
+
+# Limpiar módulo shared copiado después del build exitoso
+if [ -d "./analysis_predictive_shared" ]; then
+    echo "🧹 Limpiando archivos temporales..."
+    rm -rf ./analysis_predictive_shared
+    echo "✅ Limpieza completada"
 fi
 
 echo ""

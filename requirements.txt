@@ -20,5 +20,9 @@ google-cloud-bigquery>=3.11.0
 google-cloud-core>=2.3.0
 db-dtypes>=1.1.0
 
+# Google Sheets (para exportación)
+gspread>=5.10.0
+google-auth>=2.17.0
+
 # Additional dependencies for Cloud Run
 gunicorn>=20.1.0
